@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% from 'components/stats_cards.html' import render_stats_cards %}
+{% from 'components/search_form.html' import render_search_form %}
+{% from 'components/pagination.html' import render_pagination %}
+{% from 'components/action_buttons.html' import render_action_buttons %}
+
+{% block title %}生产计划 - EV-MES{% endblock %}
+{% block page_title %}生产计划{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group" role="group">
+    <a href="{{ url_for('production.page_production_create') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i>新建计划
+    </a>
+    <a href="{{ url_for('production.page_production_gantt') }}" class="btn btn-info">
+        <i class="fas fa-chart-bar me-1"></i>统计图表
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- 统计卡片 -->
+<div class="row mb-4">
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-primary">{{ stats.total or 0 }}</h5>
+                <p class="card-text">总计划数</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-info">{{ stats.planned or 0 }}</h5>
+                <p class="card-text">已计划</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-warning">{{ stats.in_progress or 0 }}</h5>
+                <p class="card-text">进行中</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-success">{{ stats.completed or 0 }}</h5>
+                <p class="card-text">已完成</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-danger">{{ stats.cancelled or 0 }}</h5>
+                <p class="card-text">已取消</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-secondary">{{ stats.completion_rate or 0 }}%</h5>
+                <p class="card-text">完成率</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 搜索和筛选 -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-6">
+                <label for="search" class="form-label">搜索计划</label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       value="{{ search }}" placeholder="输入计划编号或客户名称...">
+            </div>
+            <div class="col-md-3">
+                <label for="per_page" class="form-label">每页显示</label>
+                <select class="form-select" id="per_page" name="per_page">
+                    <option value="10" {% if pagination.per_page == 10 %}selected{% endif %}>10</option>
+                    <option value="20" {% if pagination.per_page == 20 %}selected{% endif %}>20</option>
+                    <option value="50" {% if pagination.per_page == 50 %}selected{% endif %}>50</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="fas fa-search me-1"></i>搜索
+                </button>
+                <a href="{{ url_for('production.page_production_list') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-1"></i>清除
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 生产计划列表 -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">生产计划列表</h5>
+    </div>
+    <div class="card-body">
+        {% if plans %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>计划编号</th>
+                        <th>关联订单</th>
+                        <th>生产线</th>
+                        <th>开始时间</th>
+                        <th>结束时间</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for plan in plans %}
+                    <tr>
+                        <td>
+                            <code>{{ plan.plan_code }}</code>
+                        </td>
+                        <td>
+                            {% if plan.order_info %}
+                            <div>
+                                <strong>{{ plan.order_info.customer }}</strong><br>
+                                <small class="text-muted">{{ plan.order_info.vehicle_model }} x{{ plan.order_info.quantity }}</small>
+                            </div>
+                            {% else %}
+                            <span class="text-muted">订单已删除</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary">{{ plan.line }}</span>
+                        </td>
+                        <td>{{ plan.start_time }}</td>
+                        <td>{{ plan.end_time }}</td>
+                        <td>
+                            <span class="badge bg-{% if plan.status == 'PLANNED' %}info{% elif plan.status == 'IN_PROGRESS' %}warning{% elif plan.status == 'COMPLETED' %}success{% else %}danger{% endif %}">
+                                {{ status_options[plan.status] }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="{{ url_for('production.page_production_edit', plan_id=plan.id) }}" 
+                                   class="btn btn-outline-primary" title="编辑">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <form method="POST" action="{{ url_for('production.page_production_delete', plan_id=plan.id) }}" 
+                                      style="display: inline;" onsubmit="return confirmDelete('确定要删除生产计划吗？')">
+                                    <button type="submit" class="btn btn-outline-danger" title="删除">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 分页 -->
+        {% if pagination.pages > 1 %}
+        <nav aria-label="生产计划分页">
+            <ul class="pagination justify-content-center">
+                <!-- 首页 -->
+                {% if pagination.page > 1 %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1&per_page={{ pagination.per_page }}&search={{ search }}">
+                        <i class="fas fa-angle-double-left"></i> 首页
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link"><i class="fas fa-angle-double-left"></i> 首页</span>
+                </li>
+                {% endif %}
+                
+                <!-- 上一页 -->
+                {% if pagination.page > 1 %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ pagination.page - 1 }}&per_page={{ pagination.per_page }}&search={{ search }}">
+                        <i class="fas fa-angle-left"></i> 上一页
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link"><i class="fas fa-angle-left"></i> 上一页</span>
+                </li>
+                {% endif %}
+                
+                <!-- 当前页码 -->
+                <li class="page-item active">
+                    <span class="page-link">{{ pagination.page }} / {{ pagination.pages }}</span>
+                </li>
+                
+                <!-- 下一页 -->
+                {% if pagination.page < pagination.pages %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ pagination.page + 1 }}&per_page={{ pagination.per_page }}&search={{ search }}">
+                        下一页 <i class="fas fa-angle-right"></i>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">下一页 <i class="fas fa-angle-right"></i></span>
+                </li>
+                {% endif %}
+                
+                <!-- 尾页 -->
+                {% if pagination.page < pagination.pages %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ pagination.pages }}&per_page={{ pagination.per_page }}&search={{ search }}">
+                        尾页 <i class="fas fa-angle-double-right"></i>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">尾页 <i class="fas fa-angle-double-right"></i></span>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-cogs fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">暂无生产计划数据</h5>
+            <p class="text-muted">点击上方"新建计划"按钮创建第一个生产计划</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

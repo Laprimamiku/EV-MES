@@ -1,0 +1,65 @@
+<!-- 分页组件 -->
+{% macro render_pagination(pagination, search, per_page, action_url) %}
+{% if pagination.pages > 1 %}
+<nav aria-label="分页导航">
+    <ul class="pagination justify-content-center">
+        <!-- 首页 -->
+        {% if pagination.page > 1 %}
+        <li class="page-item">
+            <a class="page-link" href="?page=1&per_page={{ per_page }}&search={{ search }}">
+                <i class="fas fa-angle-double-left"></i> 首页
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link"><i class="fas fa-angle-double-left"></i> 首页</span>
+        </li>
+        {% endif %}
+        
+        <!-- 上一页 -->
+        {% if pagination.page > 1 %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ pagination.page - 1 }}&per_page={{ per_page }}&search={{ search }}">
+                <i class="fas fa-angle-left"></i> 上一页
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link"><i class="fas fa-angle-left"></i> 上一页</span>
+        </li>
+        {% endif %}
+        
+        <!-- 当前页码 -->
+        <li class="page-item active">
+            <span class="page-link">{{ pagination.page }} / {{ pagination.pages }}</span>
+        </li>
+        
+        <!-- 下一页 -->
+        {% if pagination.page < pagination.pages %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ pagination.page + 1 }}&per_page={{ per_page }}&search={{ search }}">
+                下一页 <i class="fas fa-angle-right"></i>
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link">下一页 <i class="fas fa-angle-right"></i></span>
+        </li>
+        {% endif %}
+        
+        <!-- 尾页 -->
+        {% if pagination.page < pagination.pages %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ pagination.pages }}&per_page={{ per_page }}&search={{ search }}">
+                尾页 <i class="fas fa-angle-double-right"></i>
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link">尾页 <i class="fas fa-angle-double-right"></i></span>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endmacro %}

@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}{{ '编辑物料' if item else '新建物料' }} - EV-MES{% endblock %}
+{% block page_title %}{{ '编辑物料' if item else '新建物料' }}{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('inventory.page_inventory_list') }}" class="btn btn-outline-secondary">
+    <i class="fas fa-arrow-left me-1"></i>返回列表
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">{{ '编辑物料' if item else '新建物料' }}</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="itemForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="part_code" class="form-label">物料编码 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="part_code" name="part_code" 
+                                   value="{{ item.part_code if item else '' }}" required
+                                   placeholder="如: BAT1001, MOT2001">
+                            <div class="form-text">物料编码必须唯一</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="name" class="form-label">物料名称 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   value="{{ item.name if item else '' }}" required
+                                   placeholder="如: 电池包, 电机">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="spec" class="form-label">规格型号</label>
+                            <input type="text" class="form-control" id="spec" name="spec" 
+                                   value="{{ item.spec if item else '' }}"
+                                   placeholder="如: 100kWh, 150kW">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="quantity" class="form-label">库存数量 <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="quantity" name="quantity" 
+                                   value="{{ item.quantity if item else 0 }}" min="0" required>
+                        </div>
+                        <div class="col-md-12">
+                            <label for="location" class="form-label">存放位置</label>
+                            <input type="text" class="form-control" id="location" name="location" 
+                                   value="{{ item.location if item else '' }}"
+                                   placeholder="如: A区-01, B区-02">
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-end gap-2">
+                                <a href="{{ url_for('inventory.page_inventory_list') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times me-1"></i>取消
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-1"></i>{{ '更新' if item else '创建' }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        {% if item %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">二维码预览</h5>
+            </div>
+            <div class="card-body text-center">
+                <img src="{{ url_for('inventory.page_inventory_qrcode', item_id=item.id) }}" 
+                     alt="二维码" class="img-fluid" style="max-width: 200px;">
+                <p class="text-muted mt-2">扫描二维码查看物料详细信息</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 表单验证
+    document.getElementById('itemForm').addEventListener('submit', function(e) {
+        const partCode = document.getElementById('part_code').value;
+        const name = document.getElementById('name').value;
+        const quantity = document.getElementById('quantity').value;
+        
+        if (!partCode.trim()) {
+            e.preventDefault();
+            alert('物料编码不能为空');
+            return false;
+        }
+        
+        if (!name.trim()) {
+            e.preventDefault();
+            alert('物料名称不能为空');
+            return false;
+        }
+        
+        if (parseInt(quantity) < 0) {
+            e.preventDefault();
+            alert('库存数量不能为负数');
+            return false;
+        }
+    });
+</script>
+{% endblock %}

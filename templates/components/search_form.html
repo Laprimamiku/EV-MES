@@ -1,0 +1,30 @@
+<!-- 搜索表单组件 -->
+{% macro render_search_form(search, per_page, placeholder, action_url) %}
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-6">
+                <label for="search" class="form-label">搜索</label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       value="{{ search }}" placeholder="{{ placeholder }}">
+            </div>
+            <div class="col-md-3">
+                <label for="per_page" class="form-label">每页显示</label>
+                <select class="form-select" id="per_page" name="per_page">
+                    <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+                    <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
+                    <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="fas fa-search me-1"></i>搜索
+                </button>
+                <a href="{{ url_for(action_url) }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-1"></i>清除
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endmacro %}

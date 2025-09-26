@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}{{ '编辑生产计划' if plan else '新建生产计划' }} - EV-MES{% endblock %}
+{% block page_title %}{{ '编辑生产计划' if plan else '新建生产计划' }}{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('production.page_production_list') }}" class="btn btn-outline-secondary">
+    <i class="fas fa-arrow-left me-1"></i>返回列表
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">{{ '编辑生产计划' if plan else '新建生产计划' }}</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="planForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="plan_code" class="form-label">计划编号 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="plan_code" name="plan_code" 
+                                   value="{{ plan.plan_code if plan else '' }}" required
+                                   placeholder="如: PLAN20241201001">
+                            <div class="form-text">计划编号必须唯一</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="order_id" class="form-label">关联订单 <span class="text-danger">*</span></label>
+                            <select class="form-select" id="order_id" name="order_id" required>
+                                <option value="">请选择订单</option>
+                                {% for order in orders %}
+                                <option value="{{ order.id }}" 
+                                        {% if plan and plan.order_id == order.id %}selected{% endif %}>
+                                    {{ order.customer }} - {{ order.vehicle_model }} ({{ order.quantity }}台)
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="line" class="form-label">生产线 <span class="text-danger">*</span></label>
+                            <select class="form-select" id="line" name="line" required>
+                                <option value="">请选择生产线</option>
+                                <option value="Line-A" {% if plan and plan.line == 'Line-A' %}selected{% endif %}>Line-A</option>
+                                <option value="Line-B" {% if plan and plan.line == 'Line-B' %}selected{% endif %}>Line-B</option>
+                                <option value="Line-C" {% if plan and plan.line == 'Line-C' %}selected{% endif %}>Line-C</option>
+                                <option value="Line-D" {% if plan and plan.line == 'Line-D' %}selected{% endif %}>Line-D</option>
+                                <option value="Line-E" {% if plan and plan.line == 'Line-E' %}selected{% endif %}>Line-E</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="status" class="form-label">状态</label>
+                            <select class="form-select" id="status" name="status">
+                                {% for status_key, status_name in status_options.items() %}
+                                <option value="{{ status_key }}" 
+                                        {% if plan and plan.status == status_key %}selected{% endif %}>
+                                    {{ status_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="start_time" class="form-label">开始时间 <span class="text-danger">*</span></label>
+                            <input type="datetime-local" class="form-control" id="start_time" name="start_time" 
+                                   value="{{ plan.start_time if plan else '' }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="end_time" class="form-label">结束时间 <span class="text-danger">*</span></label>
+                            <input type="datetime-local" class="form-control" id="end_time" name="end_time" 
+                                   value="{{ plan.end_time if plan else '' }}" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-end gap-2">
+                                <a href="{{ url_for('production.page_production_list') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times me-1"></i>取消
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-1"></i>{{ '更新' if plan else '创建' }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 表单验证
+    document.getElementById('planForm').addEventListener('submit', function(e) {
+        const startTime = document.getElementById('start_time').value;
+        const endTime = document.getElementById('end_time').value;
+        
+        if (startTime && endTime) {
+            const start = new Date(startTime);
+            const end = new Date(endTime);
+            
+            if (end <= start) {
+                e.preventDefault();
+                alert('结束时间必须晚于开始时间');
+                return false;
+            }
+        }
+    });
+    
+    // 自动生成计划编号
+    if (!document.getElementById('plan_code').value) {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const planCode = `PLAN${year}${month}${day}001`;
+        document.getElementById('plan_code').value = planCode;
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% from 'components/stats_cards.html' import render_stats_cards %}
+{% from 'components/search_form.html' import render_search_form %}
+{% from 'components/pagination.html' import render_pagination %}
+{% from 'components/action_buttons.html' import render_action_buttons %}
+
+{% block title %}订单管理 - EV-MES{% endblock %}
+{% block page_title %}订单管理{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group" role="group">
+    <a href="{{ url_for('order.page_order_create') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i>新建订单
+    </a>
+    <a href="{{ url_for('order.page_order_charts') }}" class="btn btn-info">
+        <i class="fas fa-chart-bar me-1"></i>统计图表
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- 统计卡片 -->
+{{ render_stats_cards([
+    {'value': stats.total or 0, 'label': '总订单数', 'color': 'primary'},
+    {'value': stats.new or 0, 'label': '新建订单', 'color': 'warning'},
+    {'value': stats.review or 0, 'label': '审核中', 'color': 'info'},
+    {'value': stats.completed or 0, 'label': '已完成', 'color': 'success'}
+]) }}
+
+<!-- 搜索和筛选 -->
+{{ render_search_form(search, pagination.per_page, '输入客户名称...', 'order.page_order_list') }}
+
+<!-- 订单列表 -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">订单列表</h5>
+    </div>
+    <div class="card-body">
+        {% if orders %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>客户名称</th>
+                        <th>车型</th>
+                        <th>数量</th>
+                        <th>交期</th>
+                        <th>状态</th>
+                        <th>VIN前缀</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td>{{ order.customer }}</td>
+                        <td>{{ order.vehicle_model }}</td>
+                        <td>{{ order.quantity }}</td>
+                        <td>{{ order.due_date }}</td>
+                        <td>
+                            <span class="badge bg-{% if order.status == 'NEW' %}warning{% elif order.status == 'REVIEW' %}info{% else %}success{% endif %}">
+                                {{ status_options[order.status] }}
+                            </span>
+                        </td>
+                        <td>{{ order.vin_prefix or '-' }}</td>
+                        <td>{{ order.created_at }}</td>
+                         <td>
+                             {{ render_action_buttons(
+                                 order.id,
+                                 url_for('order.page_order_edit', order_id=order.id),
+                                 url_for('order.page_order_delete', order_id=order.id)
+                             ) }}
+                         </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 分页 -->
+        {{ render_pagination(pagination, search, pagination.per_page, 'order.page_order_list') }}
+        
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">暂无订单数据</h5>
+            <p class="text-muted">点击上方"新建订单"按钮创建第一个订单</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

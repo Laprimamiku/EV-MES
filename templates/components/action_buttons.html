@@ -1,0 +1,24 @@
+<!-- 操作按钮组件 -->
+{% macro render_action_buttons(item_id, edit_url, delete_url, extra_buttons=None) %}
+<div class="btn-group btn-group-sm" role="group">
+    <a href="{{ edit_url }}" class="btn btn-outline-primary" title="编辑">
+        <i class="fas fa-edit"></i>
+    </a>
+    {% if extra_buttons %}
+        {% for button in extra_buttons %}
+        <button type="button" class="btn btn-outline-{{ button.color }}" 
+                {% if button.modal %}data-bs-toggle="modal" data-bs-target="#{{ button.modal }}{{ item_id }}"{% endif %}
+                {% if button.onclick %}onclick="{{ button.onclick }}"{% endif %}
+                title="{{ button.title }}">
+            <i class="fas fa-{{ button.icon }}"></i>
+        </button>
+        {% endfor %}
+    {% endif %}
+    <form method="POST" action="{{ delete_url }}" 
+          style="display: inline;" onsubmit="return confirmDelete('确定要删除吗？')">
+        <button type="submit" class="btn btn-outline-danger" title="删除">
+            <i class="fas fa-trash"></i>
+        </button>
+    </form>
+</div>
+{% endmacro %}

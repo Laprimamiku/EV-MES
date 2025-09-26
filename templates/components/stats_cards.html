@@ -1,0 +1,18 @@
+<!-- 统计卡片组件 -->
+{% macro render_stats_cards(cards) %}
+<div class="row mb-4">
+    {% for card in cards %}
+    <div class="col-md-{{ 12 // cards|length }}">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-{{ card.color }}">{{ card.value }}</h5>
+                <p class="card-text">{{ card.label }}</p>
+                {% if card.subtitle %}
+                <small class="text-muted">{{ card.subtitle }}</small>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endmacro %}

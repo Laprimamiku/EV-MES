@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}{{ '编辑订单' if order else '新建订单' }} - EV-MES{% endblock %}
+{% block page_title %}{{ '编辑订单' if order else '新建订单' }}{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('order.page_order_list') }}" class="btn btn-outline-secondary">
+    <i class="fas fa-arrow-left me-1"></i>返回列表
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">{{ '编辑订单' if order else '新建订单' }}</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="orderForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="customer" class="form-label">客户名称 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="customer" name="customer" 
+                                   value="{{ order.customer if order else '' }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="vehicle_model" class="form-label">车型 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="vehicle_model" name="vehicle_model" 
+                                   value="{{ order.vehicle_model if order else '' }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="quantity" class="form-label">数量 <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="quantity" name="quantity" 
+                                   value="{{ order.quantity if order else '' }}" min="1" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="due_date" class="form-label">交期 <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="due_date" name="due_date" 
+                                   value="{{ order.due_date if order else '' }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="status" class="form-label">状态</label>
+                            <select class="form-select" id="status" name="status">
+                                {% for status_key, status_name in status_options.items() %}
+                                <option value="{{ status_key }}" 
+                                        {% if order and order.status == status_key %}selected{% endif %}>
+                                    {{ status_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="vin_prefix" class="form-label">VIN前缀</label>
+                            <input type="text" class="form-control" id="vin_prefix" name="vin_prefix" 
+                                   value="{{ order.vin_prefix if order else '' }}" 
+                                   placeholder="如: LHG, LSG">
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-end gap-2">
+                                <a href="{{ url_for('order.page_order_list') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times me-1"></i>取消
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-1"></i>{{ '更新' if order else '创建' }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 表单验证
+    document.getElementById('orderForm').addEventListener('submit', function(e) {
+        const quantity = document.getElementById('quantity').value;
+        const dueDate = document.getElementById('due_date').value;
+        
+        if (parseInt(quantity) <= 0) {
+            e.preventDefault();
+            alert('数量必须大于0');
+            return false;
+        }
+        
+        if (dueDate) {
+            const today = new Date().toISOString().split('T')[0];
+            if (dueDate < today) {
+                e.preventDefault();
+                alert('交期不能早于今天');
+                return false;
+            }
+        }
+    });
+</script>
+{% endblock %}

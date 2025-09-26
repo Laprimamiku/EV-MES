@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block title %}仪表板 - EV-MES{% endblock %}
+{% block page_title %}仪表板{% endblock %}
+
+{% block content %}
+<!-- 统计概览 -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-primary">{{ order_stats.total or 0 }}</h5>
+                <p class="card-text">总订单数</p>
+                <small class="text-muted">完成率: {{ order_stats.completion_rate or 0 }}%</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-success">{{ inventory_stats.total_items or 0 }}</h5>
+                <p class="card-text">物料种类</p>
+                <small class="text-muted">总库存: {{ inventory_stats.total_quantity or 0 }}</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-info">{{ production_stats.total or 0 }}</h5>
+                <p class="card-text">生产计划</p>
+                <small class="text-muted">完成率: {{ production_stats.completion_rate or 0 }}%</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-warning">{{ inventory_stats.part_types|length or 0 }}</h5>
+                <p class="card-text">物料类型</p>
+                <small class="text-muted">分类统计</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 图表区域 -->
+<div class="row">
+    <!-- 订单完成率饼图 -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">订单完成率分布</h5>
+            </div>
+            <div class="card-body">
+                {% if order_chart %}
+                <div id="orderChart" style="height: 300px;"></div>
+                {% else %}
+                <div class="text-center py-3">
+                    <i class="fas fa-chart-pie fa-2x text-muted"></i>
+                    <p class="text-muted mt-2">暂无数据</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- 库存雷达图 -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">库存物料分布</h5>
+            </div>
+            <div class="card-body">
+                {% if inventory_chart %}
+                <div id="inventoryChart" style="height: 300px;"></div>
+                {% else %}
+                <div class="text-center py-3">
+                    <i class="fas fa-chart-radar fa-2x text-muted"></i>
+                    <p class="text-muted mt-2">暂无数据</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+     <!-- 生产计划状态分布 -->
+     <div class="col-md-4">
+         <div class="card">
+             <div class="card-header">
+                 <h5 class="card-title mb-0">生产计划状态分布</h5>
+             </div>
+            <div class="card-body">
+                {% if production_chart %}
+                <div class="text-center">
+                    <img src="{{ production_chart }}" alt="生产计划状态分布图" class="img-fluid">
+                </div>
+                {% else %}
+                 <div class="text-center py-3">
+                     <i class="fas fa-chart-bar fa-2x text-muted"></i>
+                     <p class="text-muted mt-2">暂无数据</p>
+                 </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 快速操作 -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">快速操作</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <a href="{{ url_for('order.page_order_create') }}" class="btn btn-primary w-100 mb-2">
+                            <i class="fas fa-plus me-2"></i>新建订单
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ url_for('inventory.page_inventory_create') }}" class="btn btn-success w-100 mb-2">
+                            <i class="fas fa-boxes me-2"></i>新建物料
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ url_for('production.page_production_create') }}" class="btn btn-info w-100 mb-2">
+                            <i class="fas fa-cogs me-2"></i>新建计划
+                        </a>
+                    </div>
+                     <div class="col-md-3">
+                         <a href="{{ url_for('production.page_production_gantt') }}" class="btn btn-warning w-100 mb-2">
+                             <i class="fas fa-chart-bar me-2"></i>查看统计
+                         </a>
+                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 系统信息 -->
+<div class="row mt-4">
+    <div class="col-12">
+        <h5 class="mb-3">系统信息</h5>
+    </div>
+    
+    <!-- 订单统计卡片 -->
+    <div class="col-md-6 mb-3">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-shopping-cart me-2"></i>订单统计
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="border-end">
+                            <h4 class="text-primary mb-1">{{ order_stats.new or 0 }}</h4>
+                            <small class="text-muted">新建订单</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="border-end">
+                            <h4 class="text-warning mb-1">{{ order_stats.review or 0 }}</h4>
+                            <small class="text-muted">审核中</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <h4 class="text-success mb-1">{{ order_stats.completed or 0 }}</h4>
+                        <small class="text-muted">已完成</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 生产统计卡片 -->
+    <div class="col-md-6 mb-3">
+        <div class="card border-info">
+            <div class="card-header bg-info text-white">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-cogs me-2"></i>生产统计
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-3">
+                        <div class="border-end">
+                            <h4 class="text-info mb-1">{{ production_stats.planned or 0 }}</h4>
+                            <small class="text-muted">已计划</small>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="border-end">
+                            <h4 class="text-warning mb-1">{{ production_stats.in_progress or 0 }}</h4>
+                            <small class="text-muted">进行中</small>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="border-end">
+                            <h4 class="text-success mb-1">{{ production_stats.completed or 0 }}</h4>
+                            <small class="text-muted">已完成</small>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <h4 class="text-danger mb-1">{{ production_stats.cancelled or 0 }}</h4>
+                        <small class="text-muted">已取消</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 渲染订单完成率饼图
+    {% if order_chart %}
+    const orderData = {{ order_chart|safe }};
+    Plotly.newPlot('orderChart', orderData.data, orderData.layout, {responsive: true});
+    {% endif %}
+    
+    // 渲染库存雷达图
+    {% if inventory_chart %}
+    const inventoryData = {{ inventory_chart|safe }};
+    Plotly.newPlot('inventoryChart', inventoryData.data, inventoryData.layout, {responsive: true});
+    {% endif %}
+    
+     // 生产计划状态分布图已使用matplotlib生成静态图片
+    
+    // 自动刷新数据（每30秒）
+    setInterval(function() {
+        // 这里可以添加AJAX请求来刷新数据
+        console.log('Dashboard数据刷新...');
+    }, 30000);
+</script>
+{% endblock %}

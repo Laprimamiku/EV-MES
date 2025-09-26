@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+{% from 'components/stats_cards.html' import render_stats_cards %}
+{% from 'components/search_form.html' import render_search_form %}
+{% from 'components/pagination.html' import render_pagination %}
+{% from 'components/action_buttons.html' import render_action_buttons %}
+
+{% block title %}库存管理 - EV-MES{% endblock %}
+{% block page_title %}库存管理{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group" role="group">
+    <a href="{{ url_for('inventory.page_inventory_create') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i>新建物料
+    </a>
+    <a href="{{ url_for('inventory.page_inventory_charts') }}" class="btn btn-info">
+        <i class="fas fa-chart-bar me-1"></i>统计图表
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- 统计卡片 -->
+{{ render_stats_cards([
+    {'value': stats.total_items or 0, 'label': '物料种类', 'color': 'primary'},
+    {'value': stats.total_quantity or 0, 'label': '总库存量', 'color': 'success'},
+    {'value': stats.part_types|length or 0, 'label': '物料类型', 'color': 'info'}
+]) }}
+
+<!-- 搜索和筛选 -->
+{{ render_search_form(search, pagination.per_page, '输入物料名称或编码...', 'inventory.page_inventory_list') }}
+
+<!-- 库存列表 -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">库存列表</h5>
+    </div>
+    <div class="card-body">
+        {% if items %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>物料编码</th>
+                        <th>物料名称</th>
+                        <th>规格型号</th>
+                        <th>库存数量</th>
+                        <th>存放位置</th>
+                        <th>二维码</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td>
+                            <code>{{ item.part_code }}</code>
+                        </td>
+                        <td>{{ item.name }}</td>
+                        <td>{{ item.spec or '-' }}</td>
+                        <td>
+                            <span class="badge bg-{% if item.quantity > 100 %}success{% elif item.quantity > 50 %}warning{% else %}danger{% endif %}">
+                                {{ item.quantity }}
+                            </span>
+                        </td>
+                        <td>{{ item.location or '-' }}</td>
+                        <td>
+                            <a href="{{ url_for('inventory.page_inventory_qrcode', item_id=item.id) }}" 
+                               class="btn btn-sm btn-outline-info" target="_blank" title="查看二维码">
+                                <i class="fas fa-qrcode"></i>
+                            </a>
+                        </td>
+                        <td>{{ item.created_at }}</td>
+                         <td>
+                             {{ render_action_buttons(
+                                 item.id,
+                                 url_for('inventory.page_inventory_edit', item_id=item.id),
+                                 url_for('inventory.page_inventory_delete', item_id=item.id),
+                                 [{'color': 'success', 'icon': 'exchange-alt', 'title': '入库出库', 'modal': 'stockModal'}]
+                             ) }}
+                         </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 分页 -->
+        {{ render_pagination(pagination, search, pagination.per_page, 'inventory.page_inventory_list') }}
+        
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-boxes fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">暂无库存数据</h5>
+            <p class="text-muted">点击上方"新建物料"按钮创建第一个库存物料</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 入库出库模态框 -->
+{% for item in items %}
+<div class="modal fade" id="stockModal{{ item.id }}" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">库存操作 - {{ item.name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <!-- 左侧：物料信息 -->
+                    <div class="col-md-6">
+                        <h6>物料信息</h6>
+                        <div class="card">
+                            <div class="card-body">
+                                <p><strong>物料编码：</strong>{{ item.part_code }}</p>
+                                <p><strong>物料名称：</strong>{{ item.name }}</p>
+                                <p><strong>规格型号：</strong>{{ item.spec or '-' }}</p>
+                                <p><strong>当前库存：</strong><span class="badge bg-primary">{{ item.quantity }}</span></p>
+                                <p><strong>存放位置：</strong>{{ item.location or '-' }}</p>
+                            </div>
+                        </div>
+                        
+                        <!-- 入库出库操作 -->
+                        <h6 class="mt-3">库存操作</h6>
+                        <form method="POST" action="{{ url_for('inventory.page_inventory_update_quantity', item_id=item.id) }}">
+                            <div class="mb-3">
+                                <label class="form-label">操作类型</label>
+                                <select class="form-select" id="operationType{{ item.id }}" onchange="updateQuantityInput({{ item.id }})">
+                                    <option value="in">入库</option>
+                                    <option value="out">出库</option>
+                                    <option value="set">设置库存</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="quantity{{ item.id }}" class="form-label">数量</label>
+                                <input type="number" class="form-control" id="quantity{{ item.id }}" name="quantity" 
+                                       min="0" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="reason{{ item.id }}" class="form-label">操作原因</label>
+                                <input type="text" class="form-control" id="reason{{ item.id }}" name="reason" 
+                                       placeholder="请输入操作原因">
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">确认操作</button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                     <!-- 右侧：二维码信息 -->
+                     <div class="col-md-6">
+                         <h6>二维码信息</h6>
+                         <div class="card">
+                             <div class="card-body">
+                                 <div class="text-center mb-3">
+                                     <img src="{{ url_for('inventory.page_inventory_qrcode', item_id=item.id) }}" 
+                                          alt="二维码" class="img-fluid" style="max-width: 150px;">
+                                 </div>
+                                 <div class="alert alert-info">
+                                     <h6><i class="fas fa-info-circle me-2"></i>扫描说明</h6>
+                                     <p class="mb-0">使用手机或其他设备扫描上方二维码，可获取基本信息</p>
+                                 </div>
+                                 <div class="text-center">
+                                     <button type="button" class="btn btn-outline-primary btn-sm" onclick="copyQRInfo({{ item.id }})">
+                                         <i class="fas fa-copy me-1"></i>复制信息
+                                     </button>
+                                 </div>
+                             </div>
+                         </div>
+                     </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 复制二维码信息功能
+function copyQRInfo(itemId) {
+    // 获取物料信息
+    const partCode = document.querySelector(`#stockModal${itemId} .card-body p:nth-child(1)`).textContent.replace('物料编码：', '');
+    const name = document.querySelector(`#stockModal${itemId} .card-body p:nth-child(2)`).textContent.replace('物料名称：', '');
+    const spec = document.querySelector(`#stockModal${itemId} .card-body p:nth-child(3)`).textContent.replace('规格型号：', '');
+    const quantity = document.querySelector(`#stockModal${itemId} .card-body p:nth-child(4) .badge`).textContent;
+    const location = document.querySelector(`#stockModal${itemId} .card-body p:nth-child(5)`).textContent.replace('存放位置：', '');
+    
+    // 构建复制内容
+    const copyContent = `物料编码: ${partCode}
+物料名称: ${name}
+规格型号: ${spec}
+当前库存: ${quantity}
+存放位置: ${location}`;
+    
+    // 复制到剪贴板
+    navigator.clipboard.writeText(copyContent).then(function() {
+        // 显示成功提示
+        const button = event.target.closest('button');
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-check me-1"></i>已复制';
+        button.classList.remove('btn-outline-primary');
+        button.classList.add('btn-success');
+        
+        setTimeout(() => {
+            button.innerHTML = originalText;
+            button.classList.remove('btn-success');
+            button.classList.add('btn-outline-primary');
+        }, 2000);
+    }).catch(function(err) {
+        console.error('复制失败:', err);
+        alert('复制失败，请手动复制信息');
+    });
+}
+
+// 更新数量输入框
+function updateQuantityInput(itemId) {
+    const operationType = document.getElementById(`operationType${itemId}`).value;
+    const quantityInput = document.getElementById(`quantity${itemId}`);
+    
+    switch(operationType) {
+        case 'in':
+            quantityInput.placeholder = '请输入入库数量';
+            break;
+        case 'out':
+            quantityInput.placeholder = '请输入出库数量';
+            break;
+        case 'set':
+            quantityInput.placeholder = '请输入新的库存数量';
+            break;
+    }
+}
+</script>
+{% endblock %}
